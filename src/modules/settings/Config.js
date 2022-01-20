@@ -190,6 +190,18 @@ export default class Config {
       series = w.config.series
     }
 
+    // Do something smart here when series length is > 1 and not equal to yaxis length and yaxis length > 1
+    if (
+      !isLogY &&
+      series.length > 1 &&
+      opts.yaxis.length > 1 &&
+      series.length !== opts.yaxis.length
+    ) {
+      opts.yaxis = opts.yaxis.map((yaxisInfo, index) => {
+        return yaxisInfo
+      })
+    }
+
     // A logarithmic chart works correctly when each series has a corresponding y-axis
     // If this is not the case, we manually create yaxis for multi-series log chart
     if (isLogY && series.length !== opts.yaxis.length && series.length) {
@@ -197,6 +209,37 @@ export default class Config {
         if (!s.name) {
           series[i].name = `series-${i + 1}`
         }
+
+        if (series.length !== opts.yaxis.length) {
+          let totalYAxisPoints = 0
+          opts.yaxis.forEach((element, index) => {
+            if (Array.isArray(element.seriesName)) {
+              totalYAxisPoints = totalYAxisPoints + element.seriesName.length
+            } else {
+              totalYAxisPoints = totalYAxisPoints + 1
+            }
+          })
+
+          if (series.length === totalYAxisPoints) {
+            let result = undefined
+
+            opts.yaxis.forEach((element, index) => {
+              if (Array.isArray(element.seriesName)) {
+                result = element.seriesName.includes(series[i].name)
+                  ? element
+                  : undefined
+              } else {
+                result =
+                  element.seriesName === series[i].name ? element : undefined
+              }
+            })
+
+            if (result) {
+              return result
+            }
+          }
+        }
+
         if (opts.yaxis[i]) {
           opts.yaxis[i].seriesName = series[i].name
           return opts.yaxis[i]
